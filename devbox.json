@@ -1,0 +1,27 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.16.0/.schema/devbox.schema.json",
+  "packages": {
+    "libarchive": {
+      "version": "latest",
+      "outputs": ["dev", "out"]
+    },
+    "cmake":        "latest",
+    "cmake-format": "latest",
+    "curl": {
+      "version": "latest",
+      "outputs": ["out", "dev", "bin"]
+    },
+    "ninja": "latest",
+    "just":  "latest"
+  },
+  "shell": {
+    "init_hook": [
+      "echo 'Welcome to devbox!' > /dev/null"
+    ],
+    "scripts": {
+      "test": [
+        "echo \"Error: no test specified\" && exit 1"
+      ]
+    }
+  }
+}
