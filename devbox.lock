@@ -65,59 +65,59 @@
         }
       }
     },
-    "cmake@latest": {
-      "last_modified": "2025-11-23T21:50:36Z",
-      "resolved": "github:NixOS/nixpkgs/ee09932cedcef15aaf476f9343d1dea2cb77e261#cmake",
+    "cmake@3.29": {
+      "last_modified": "2024-10-13T23:44:06Z",
+      "resolved": "github:NixOS/nixpkgs/d4f247e89f6e10120f911e2e2d2254a050d0f732#cmake",
       "source": "devbox-search",
-      "version": "4.1.2",
+      "version": "3.29.6",
       "systems": {
         "aarch64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/0v5vpvwbl94qv9447jz995i4n9mx4l63-cmake-4.1.2",
+              "path": "/nix/store/a7v65i1rs0jbdjq578pk9h689fif32sd-cmake-3.29.6",
               "default": true
             }
           ],
-          "store_path": "/nix/store/0v5vpvwbl94qv9447jz995i4n9mx4l63-cmake-4.1.2"
+          "store_path": "/nix/store/a7v65i1rs0jbdjq578pk9h689fif32sd-cmake-3.29.6"
         },
         "aarch64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/ipjw0mbzcycidbw62gsz47cgivqxm2lv-cmake-4.1.2",
+              "path": "/nix/store/kap109b20fvapdkpk0djrqy5chqc8rgh-cmake-3.29.6",
               "default": true
             },
             {
               "name": "debug",
-              "path": "/nix/store/4m6l2qb5s7vyirybbn3c5k1rv2dww1vy-cmake-4.1.2-debug"
+              "path": "/nix/store/k6dxnvzrpjng7f1vv3likb8p8x3a2gwf-cmake-3.29.6-debug"
             }
           ],
-          "store_path": "/nix/store/ipjw0mbzcycidbw62gsz47cgivqxm2lv-cmake-4.1.2"
+          "store_path": "/nix/store/kap109b20fvapdkpk0djrqy5chqc8rgh-cmake-3.29.6"
         },
         "x86_64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/i7c7r2g0zycvi7wh3rnw1dx3aglbvw2d-cmake-4.1.2",
+              "path": "/nix/store/s1b6hfmgbib22r5xyrw86v9x6mljxhal-cmake-3.29.6",
               "default": true
             }
           ],
-          "store_path": "/nix/store/i7c7r2g0zycvi7wh3rnw1dx3aglbvw2d-cmake-4.1.2"
+          "store_path": "/nix/store/s1b6hfmgbib22r5xyrw86v9x6mljxhal-cmake-3.29.6"
         },
         "x86_64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/w9jm660dykns6hzrdhxmqfywnc9ail8g-cmake-4.1.2",
+              "path": "/nix/store/24gbi6mcw4c6jgzai9aaxx9qi2rxdb09-cmake-3.29.6",
               "default": true
             },
             {
               "name": "debug",
-              "path": "/nix/store/pnizhra0882ijp3nilvzdzbaa0ayq4hd-cmake-4.1.2-debug"
+              "path": "/nix/store/6jgji8dva0n4d9l3yplabfa29j6hsjwf-cmake-3.29.6-debug"
             }
           ],
-          "store_path": "/nix/store/w9jm660dykns6hzrdhxmqfywnc9ail8g-cmake-4.1.2"
+          "store_path": "/nix/store/24gbi6mcw4c6jgzai9aaxx9qi2rxdb09-cmake-3.29.6"
         }
       }
     },
