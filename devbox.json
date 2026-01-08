@@ -3,16 +3,23 @@
   "packages": {
     "libarchive": {
       "version": "latest",
-      "outputs": ["dev", "out"]
+      "outputs": [
+        "dev",
+        "out"
+      ]
     },
-    "cmake":        "latest",
+    "cmake": "3.29",
     "cmake-format": "latest",
     "curl": {
       "version": "latest",
-      "outputs": ["out", "dev", "bin"]
+      "outputs": [
+        "out",
+        "dev",
+        "bin"
+      ]
     },
     "ninja": "latest",
-    "just":  "latest"
+    "just": "latest"
   },
   "shell": {
     "init_hook": [

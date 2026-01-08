@@ -195,13 +195,17 @@ int main(int argc, char *argv[])
             RSS_CONFIG_STRING_LENGTH - 1);
     config.launchFile[RSS_CONFIG_STRING_LENGTH - 1] = '\0';
 
-    std::string stagingFolder =
-        std::filesystem::temp_directory_path().string() +
-        "/librssconnect-staging";
+    auto stagingFolder =
+        std::filesystem::temp_directory_path() / "librssconnect-staging";
+    if (exists(stagingFolder)) {
+        remove_all(stagingFolder);
+    }
+
     std::filesystem::create_directories(stagingFolder);
-    strncpy(config.stagingFolder, stagingFolder.c_str(),
+    strncpy(config.stagingFolder, stagingFolder.string().c_str(),
             RSS_CONFIG_STRING_LENGTH - 1);
     config.stagingFolder[RSS_CONFIG_STRING_LENGTH - 1] = '\0';
+    std::cout << "Staging folder: " << config.stagingFolder << '\n';
 
     // Step 6: Create, configure, and initialize
     std::cout << "\n=== Step 6: Setting Up Connection ===\n";

@@ -1,0 +1,7 @@
+ColumnLimit: 80
+IndentWidth: 4
+UseTab: Never
+AllowAllArgumentsOnNextLine: true
+AllowAllParametersOfDeclarationOnNextLine: true
+BreakBeforeBraces: Linux
+PackConstructorInitializers: Never
