@@ -17,10 +17,12 @@
 
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
 #include <iostream>
+#include <mutex>
 #include <sstream>
 #include <string>
 #include <thread>
@@ -58,6 +60,34 @@ void loggingCallback(RssLogLevel level, char *message, void * /*userData*/)
     }
 
     std::cout << "[" << levelStr << "] " << message << std::endl;
+}
+
+// Global synchronization for callbacks
+namespace
+{
+std::mutex loggedInMutex;
+std::condition_variable loggedInCondition;
+
+std::atomic<bool> receivedLoggedIn{false};
+} // namespace
+
+/**
+ * Callback for RSS message receive events
+ * Detects RSSCMD_SETUSER to signal CM registration
+ */
+void onMessageReceived(RssMessage msg, void * /*userData*/)
+{
+    RssCommand cmdType = rssMessageGetCommandType(msg);
+
+    if (cmdType == RSSCMD_SETUSER) {
+        std::cout
+            << "[Callback] Received SETUSER response - CM is registered\n";
+        {
+            std::lock_guard<std::mutex> lock(loggedInMutex);
+            receivedLoggedIn = true;
+        }
+        loggedInCondition.notify_one();
+    }
 }
 
 int main(int argc, char *argv[])
@@ -212,6 +242,7 @@ int main(int argc, char *argv[])
 
     std::cout << "Creating connection manager...\n";
     ConnectionManagerHandle handle = createConnectionManager(&config);
+
     if (!handle) {
         std::cerr << "Failed to create connection manager\n";
         return 1;
@@ -222,6 +253,7 @@ int main(int argc, char *argv[])
     if (configResult != RSS_OK) {
         std::cerr << "Failed to configure connection manager (error code: "
                   << configResult << ")\n";
+
         destroyConnectionManager(handle);
         return 1;
     }
@@ -231,39 +263,57 @@ int main(int argc, char *argv[])
     if (initResult != RSS_OK) {
         std::cerr << "Failed to initialize connection manager (error code: "
                   << initResult << ")\n";
+
         destroyConnectionManager(handle);
         return 1;
     }
 
     // Step 7: Run connection manager in background thread
-    constexpr auto runFor = std::chrono::seconds(30);
     std::cout << "\n=== Step 7: Running Connection Manager ===\n";
     std::cout << "Starting connection manager in background...\n";
-    std::cout << "Connection will run for " << runFor.count() << " seconds\n";
+    std::cout << "Connection manager will run until stopped\n";
 
     // Track if connection manager is still running
     std::atomic<bool> isRunning{true};
-    std::atomic<bool> shouldStop{false};
 
     // Start connection manager in background thread
-    std::thread scmThread([handle, &isRunning, &shouldStop]() {
-        RssErrorCode runResult = runConnectionManager(handle, nullptr);
+
+    // Create message callbacks to detect SETUSER
+    RssMessageCallbacks callbacks = createRssMessageCallbacks();
+    rssMessageSetOnReceiveCallback(callbacks, onMessageReceived, nullptr);
+
+    std::thread cmThread([handle, callbacks, &isRunning]() {
+        RssErrorCode runResult = runConnectionManager(handle, callbacks);
         isRunning = false;
-        if (runResult != RSS_OK && !shouldStop) {
-            std::cerr << "\n[SCM Thread] Connection manager failed with error: "
+        if (runResult != RSS_OK) {
+            std::cerr << "\n[CM Thread] Connection manager failed with error: "
                       << runResult << "\n";
         }
     });
 
     // Wait for connection manager to initialize and register with server
-    // The SCM needs to process INIT and SETUSER, and the server needs to
-    // add the user to the SCM's userList before v2/connection can find it
-    std::cout << "Waiting for connection manager to register with server...\n";
-    std::this_thread::sleep_for(std::chrono::seconds(10));
+    // The CM needs to process INIT and SETUSER, and the server needs to
+    // add the user to the CM's userList before v2/connection can find it
+    std::cout << "Waiting for SETUSER response (CM registration)...\n";
+    {
+        std::unique_lock<std::mutex> lock(loggedInMutex);
+        if (!loggedInCondition.wait_for(lock, std::chrono::seconds(30), [] {
+                return receivedLoggedIn.load();
+            })) {
+            std::cerr << "Timeout waiting for SETUSER response!\n";
+            stopConnectionManager(handle);
+            cmThread.join();
+            destroyRssMessageCallbacks(callbacks);
+            destroyConnectionManager(handle);
+            return 1;
+        }
+        std::cout << "CM registered! SETUSER response received.\n";
+    }
 
     if (!isRunning) {
         std::cerr << "Connection manager stopped unexpectedly!\n";
-        scmThread.join();
+        cmThread.join();
+        destroyRssMessageCallbacks(callbacks);
         destroyConnectionManager(handle);
         return 1;
     }
@@ -275,51 +325,21 @@ int main(int argc, char *argv[])
     if (!example::initiateConnection(params)) {
         std::cerr << "WARNING: Failed to initiate connection via API\n";
         std::cerr
-            << "You will see LOGGEDIN but not ATTACHREQUEST/FORWARDL/MAPHOST\n";
+            << "You will see SETUSER but not ATTACHREQUEST/FORWARDL/MAPHOST\n";
     }
 
-    // Let connection run for a while to demonstrate the full lifecycle
-    std::cout << "\nLetting connection run for " << (runFor.count() - 10)
-              << " more seconds...\n";
-    std::this_thread::sleep_for(runFor - std::chrono::seconds(10));
-
-    // Stop the connection manager
     std::cout << "\n[Main] Stopping connection manager...\n";
-    shouldStop = true;
     stopConnectionManager(handle);
 
-    // Wait for SCM thread to finish
-    scmThread.join();
+    // Wait for CM thread to finish
+    cmThread.join();
 
     std::cout << "Connection manager stopped successfully\n";
 
     // Step 9: Cleanup
     std::cout << "\n=== Step 9: Cleaning Up ===\n";
+    destroyRssMessageCallbacks(callbacks);
     destroyConnectionManager(handle);
-
-    std::cout << "\n=== Summary ===\n";
-    std::cout << "This example successfully demonstrated:\n";
-    std::cout << "  ✓ OAuth2 authentication with client credentials\n";
-    std::cout << "  ✓ Automatic API secret rotation\n";
-    std::cout << "  ✓ Getting gatekeeper info from /v2/site endpoint\n";
-    std::cout << "  ✓ Getting SSH private key from /v2/scmkey endpoint "
-                 "(expires in 2 minutes)\n";
-    std::cout << "  ✓ Getting SSH host key via ssh-keyscan\n";
-    std::cout << "  ✓ Getting hostId from /v2/hostId endpoint\n";
-    std::cout << "  ✓ Generating launch file with connection parameters\n";
-    std::cout << "  ✓ Complete ConnectionManager lifecycle:\n";
-    std::cout << "    - Create and configure connection manager\n";
-    std::cout << "    - Initialize (establish SSH connection)\n";
-    std::cout << "    - Run in background (process INIT, SETUSER, LOGGEDIN)\n";
-    std::cout << "    - Call POST /v2/connection to initiate attach\n";
-    std::cout << "    - Receive ATTACHREQUEST, FORWARDL, MAPHOST (if attach "
-                 "succeeds)\n";
-    std::cout << "    - Stop and cleanup\n";
-    std::cout << "\nExpected warnings:\n";
-    std::cout << "  - Device certificate check may return 404 - normal for API "
-                 "connections\n";
-    std::cout << "  - Notification endpoint may return 404/401 - not required "
-                 "for connection\n";
 
     return 0;
 }
