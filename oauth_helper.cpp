@@ -913,9 +913,6 @@ bool initiateConnection(const ConnectionParams &params)
     }
 
     std::cout << "Connection initiated successfully" << std::endl;
-    std::cout << "Server should now send ATTACHREQUEST, FORWARDL, and MAPHOST "
-                 "messages"
-              << std::endl;
 
     return true;
 }
